@@ -1,26 +1,32 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import {TodoForm, TodoList} from './components/todo'
-import {addTodo, generateId, toggleTodo, findById, updateTodo, removeTodo} from './lib/todoHelpers'
+import {TodoForm, TodoList, Footer} from './components/todo'
+import {addTodo, generateId, toggleTodo, findById, updateTodo, removeTodo, filterTodos} from './lib/todoHelpers'
 import {partial, pipe} from './lib/util'
+import {loadTodos, createTodo, saveTodo, destroyTodo} from './lib/todoService'
 
 class App extends Component {
    state = {
-      todos: [
-        {id: 1, name: 'test1', isComplete: true},
-        {id: 2, name: 'test2', isComplete: false},
-        {id: 3, name: 'test3', isComplete: false}
-      ],
+      todos: [],
       currentTodo: ''
     }
 
+  static contextTypes = {
+    route: React.PropTypes.string
+  }
+
   handleToggle = (id) => {
-    const getUpdatedTodos = pipe(findById, toggleTodo, partial(updateTodo, this.state.todos))
-    const updatedTodos = getUpdatedTodos(id, this.state.todos)
+    const getToggleTodo = pipe(findById, toggleTodo)
+    const updated = getToggleTodo(id, this.state.todos)
+    const getUpdatedTodos = partial(updateTodo, this.state.todos)
+    const updatedTodos = getUpdatedTodos(updated)
+
     this.setState({
       todos: updatedTodos
     })
+
+    saveTodo(updated).then(() => this.showTempMessage('Todo updated'))
   }
 
   handleRemove = (id, evt) => {
@@ -29,6 +35,7 @@ class App extends Component {
     this.setState({
       todos: updatedTodos
     })
+    destroyTodo(id).then(() => this.showTempMessage('Todo Removed'))
   }
 
   handleInputChange = (evt) => {
@@ -44,6 +51,16 @@ class App extends Component {
     })
   }
 
+  showTempMessage = (msg) => {
+    this.setState({message: msg})
+    setTimeout(() => this.setState({message: ''}), 2500)
+  }
+
+  componentDidMount(){
+    loadTodos()
+    .then(todos => this.setState({todos}))  
+  }
+
   handleSubmit = (evt) => {
       evt.preventDefault()
       const newId = generateId()
@@ -54,10 +71,13 @@ class App extends Component {
         currentTodo: '',
         errorMessage: ''
       })
+      createTodo(newTodo).then(() => this.showTempMessage('Todo Added'))
     }
 
   render() {
     const submitHandler = this.state.currentTodo ? this.handleSubmit : this.handleEmptySubmit
+    const displayTodos = filterTodos(this.state.todos, this.context.route)
+
     return (
       <div className="App">
         <div className="App-header">
@@ -66,12 +86,16 @@ class App extends Component {
         </div>
         <div className="Todo-App">
           {this.state.errorMessage && <span className='error'>{this.state.errorMessage}</span>}
+          {this.state.message && <span className='success'>{this.state.message}</span>}
+          
           <TodoForm handleInputChange={this.handleInputChange}
             currentTodo={this.state.currentTodo}
             handleSubmit={submitHandler}/>
+
           <TodoList handleToggle={this.handleToggle} 
-            todos={this.state.todos}
+            todos={displayTodos}
             handleRemove = {this.handleRemove}/>
+            <Footer />
         </div>
       </div>
     );
