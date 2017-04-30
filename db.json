@@ -3,12 +3,12 @@
     {
       "id": 1,
       "name": "Setup Server",
-      "isComplete": true
+      "isComplete": false
     },
     {
       "id": 2,
       "name": "Start Server",
-      "isComplete": true
+      "isComplete": false
     },
     {
       "id": 3,
@@ -23,7 +23,7 @@
     {
       "id": 55723,
       "name": "added",
-      "isComplete": true
+      "isComplete": false
     },
     {
       "id": 97076,
